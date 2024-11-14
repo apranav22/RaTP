@@ -3,11 +3,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.mps.is_available() else "cpu"))
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class PCLoss(nn.Module):
 	def __init__(self, num_classes, scale):
 		super(PCLoss, self).__init__()
 		self.soft_plus = nn.Softplus()
-		self.label = torch.LongTensor([i for i in range(num_classes)]).cuda()
+		self.label = torch.LongTensor([i for i in range(num_classes)]).to(device)
 		self.scale = scale
 	
 	def forward(self, feature, target, proxy):
@@ -30,7 +33,7 @@ class PCLoss(nn.Module):
 		feature = feature.masked_fill(feature < 1e-6, -np.inf)
 		
 		logits = torch.cat([pred_p, pred_n, feature], dim=1)  
-		label = torch.zeros(logits.size(0), dtype=torch.long).cuda()
+		label = torch.zeros(logits.size(0), dtype=torch.long).to(device)
 		loss = F.nll_loss(F.log_softmax(self.scale * logits, dim=1), label)
 		return loss
 
@@ -38,7 +41,7 @@ class PCALoss(nn.Module):
 	def __init__(self, num_classes, scale):
 		super(PCALoss, self).__init__()
 		self.soft_plus = nn.Softplus()
-		self.label = torch.LongTensor([i for i in range(num_classes)]).cuda()
+		self.label = torch.LongTensor([i for i in range(num_classes)]).to(device)
 		self.scale = scale
 	
 	def forward(self, feature, target, proxy, Mproxy, mweight=1):

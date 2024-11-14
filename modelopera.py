@@ -2,6 +2,8 @@
 import torch
 from network import img_network
 
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.mps.is_available() else "cpu"))
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_fea(args):
     if args.net.startswith('vgg'):
@@ -24,8 +26,8 @@ def accuracy(network, loader):
     network.eval()
     with torch.no_grad():
         for data in loader:
-            x = data[0].cuda().float()
-            y = data[1].cuda().long()
+            x = data[0].to(device).float()
+            y = data[1].to(device).long()
             p = network(x)
 
             if p.size(1) == 1:

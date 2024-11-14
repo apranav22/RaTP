@@ -9,7 +9,10 @@ from opt import *
 from network.common_network import feat_encoder
 import PCA
 from RandMix import RandMix
-    
+
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.mps.is_available() else "cpu"))
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def Entropy_(input_):
     bs = input_.size(0)
     epsilon = 1e-5
@@ -36,7 +39,7 @@ class RaTP(torch.nn.Module):
         nn.init.kaiming_uniform_(self.classifier, mode='fan_out', a=math.sqrt(5))
                     
         # Data augment algorithm
-        self.data_aug = RandMix(1).cuda()
+        self.data_aug = RandMix(1).to(device)
         if args.dataset == 'dg5':
             self.aug_tran = transforms.Normalize([0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         else:
@@ -61,8 +64,8 @@ class RaTP(torch.nn.Module):
 
     def train_source(self, minibatches, task_id, epoch):
         self.task_id = task_id
-        all_x = minibatches[0].cuda().float()   
-        all_y = minibatches[1].cuda().long()    
+        all_x = minibatches[0].to(device).float()   
+        all_y = minibatches[1].to(device).long()    
 
         # Data Augmentation using RandMix
         ratio = epoch / self.args.max_epoch
@@ -80,8 +83,8 @@ class RaTP(torch.nn.Module):
     
     def adapt(self, minibatches, task_id, epoch, replay_dataloader=None, old_model=None):
         self.task_id = task_id
-        all_x = minibatches[0].cuda().float()   
-        all_y = minibatches[1].cuda().long()    
+        all_x = minibatches[0].to(device).float()   
+        all_y = minibatches[1].to(device).long()    
 
         # Data Augmentation using RandMix
         all_x, all_y = self.select_aug(all_x, all_y, epoch)
@@ -124,7 +127,7 @@ class RaTP(torch.nn.Module):
         return loss, loss_dict
     
     def distill_loss(self, pred, all_x, old_model):
-        old_model.cuda().eval()
+        old_model.to(device).eval()
         with torch.no_grad():
             old_logist = nn.Softmax(dim=1)(old_model(all_x))
         

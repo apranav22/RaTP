@@ -11,6 +11,9 @@ from utils.util import set_random_seed, save_checkpoint, log_print
 from train import train
 from utils.visual import save_plot_acc_epochs, fit_tSNE, visual_tSNE
 
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.mps.is_available() else "cpu"))
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 if __name__ == '__main__':
     args = get_args()
     set_random_seed(args.seed)
@@ -23,7 +26,7 @@ if __name__ == '__main__':
     train_loaders, eval_loaders, eval_name_dict, task_sequence_name = get_img_dataloader(args)
 
     # Model
-    model = RaTP(args).cuda()
+    model = RaTP(args).to(device)
     old_model = None   # used for knwoledge distillation algorithms
     Replay_algorithm_class = ReplayAlg.get_algorithm_class(args.replay)
     Replay_algorithm = Replay_algorithm_class(args)
@@ -64,8 +67,8 @@ if __name__ == '__main__':
         # save model after finishing a task. It will be used for knowledge distill algorithms
         save_checkpoint(args.saved_model_name, model, args)
         old_model = copy.deepcopy(model)
-        model.cuda()
-        old_model.cuda().eval()
+        model.to(device)
+        old_model.to(device).eval()
     
     save_plot_acc_epochs(args, all_val_acc_record, task_sequence_name)
     if args.tsne:

@@ -11,6 +11,9 @@ from datautil.mydataloader import InfiniteDataLoader
 from utils.util import log_print
 import Replay.utils as RPutils
 
+device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.mps.is_available() else "cpu"))
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def assign_pseudo_label(args, dataloader, replay_dataset, taskid, model, epoch, cur=False):
     pseudo_tau = 0 
     if taskid == 0 or args.pLabelAlg == 'ground':
@@ -29,7 +32,7 @@ def assign_pseudo_label(args, dataloader, replay_dataset, taskid, model, epoch, 
                                         shuffle=False,
                                         batch_size=args.batch_size,
                                         num_workers=args.N_WORKERS)
-        model.eval().cuda()
+        model.eval().to(device)
         pseudo_clabel, pacc_dict, bool_index = T2PL(args, curr_dataloader, model, pseudo_tau)
         for i, v in enumerate(bool_index):
             if v:
@@ -45,7 +48,7 @@ def T2PL(args, loader, model, pseudo_tau):
     start_test = True
     with torch.no_grad():
         for i, data in enumerate(loader):
-            inputs = data[0].cuda()
+            inputs = data[0].to(device)
             labels = data[1]
 
             feas = model.encoder(model.featurizer(inputs))
